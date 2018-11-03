@@ -1,0 +1,119 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <com.dabsquared.gitlabjenkins.connection.GitLabConnectionProperty plugin="gitlab-plugin@1.5.5">
+      <gitLabConnection>gitlab</gitLabConnection>
+    </com.dabsquared.gitlabjenkins.connection.GitLabConnectionProperty>
+    <EnvInjectJobProperty plugin="envinject@2.1.5">
+      <info>
+        <secureGroovyScript plugin="script-security@1.44">
+          <script>def map = [:]
+Deploy_Type = &apos;test&apos;
+	map[&quot;REGISTRY_USER&quot;]= &quot;admin&quot;
+	map[&quot;REGISTRY_PASSWORD&quot;]= &quot;Harbor12345&quot;
+return map</script>
+          <sandbox>true</sandbox>
+        </secureGroovyScript>
+        <loadFilesFromMaster>false</loadFilesFromMaster>
+      </info>
+      <on>true</on>
+      <keepJenkinsSystemVariables>true</keepJenkinsSystemVariables>
+      <keepBuildVariables>true</keepBuildVariables>
+      <overrideBuildParameters>false</overrideBuildParameters>
+    </EnvInjectJobProperty>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>5</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.plugins.copyartifact.CopyArtifact plugin="copyartifact@1.39.1">
+      <project>101-jforum3-build</project>
+      <filter>**/jforum3*.war</filter>
+      <target></target>
+      <excludes></excludes>
+      <selector class="hudson.plugins.copyartifact.WorkspaceSelector"/>
+      <flatten>true</flatten>
+      <doNotFingerprintArtifacts>false</doNotFingerprintArtifacts>
+    </hudson.plugins.copyartifact.CopyArtifact>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+set -ex
+export BUILD_ID=dontKillMe
+export BUILD_TEMP_PATH=/jenkins/tmp
+export REGISTRY_URL=reg.myhub.com
+export REGISTRY_PROJECT=jforum3
+export IMAGE_NAME=jforum3
+
+CD_DATE=`date +%Y%m%d%H`
+export IMAGE_TAG=$CD_DATE
+
+echo &apos;************************No.1  start copy war ************************&apos;
+# check related dir 
+if [ ! -f &quot;$BUILD_TEMP_PATH&quot; ];then
+	mkdir -p $BUILD_TEMP_PATH
+fi
+# rm old jar
+	rm -rf $BUILD_TEMP_PATH/*${IMAGE_NAME}*.war
+    
+echo &quot;copy jar...&quot;
+cp ${WORKSPACE}/*.war ${BUILD_TEMP_PATH}
+cp ${JENKINS_HOME}/workspace/101-jforum3-build/dockerfile ${BUILD_TEMP_PATH}
+#cp ${WORKSPACE}/dockerfile ${BUILD_TEMP_PATH}
+
+echo &apos;************************No.1 copy done...************************&apos;
+
+
+cd $BUILD_TEMP_PATH
+docker login --username $REGISTRY_USER --password $REGISTRY_PASSWORD $REGISTRY_URL
+docker build -t $REGISTRY_URL/$REGISTRY_PROJECT/$IMAGE_NAME:$CD_DATE .
+
+if [ $? -eq 0 ];then
+    echo &quot;Docker Image: $REGISTRY_URL/${REGISTRY_PROJECT}/$IMAGE_NAME:$IMAGE_TAG build successed!&quot;
+else
+    echo &quot;Docker Image: $REGISTRY_URL/${REGISTRY_PROJECT}/$IMAGE_NAME:$IMAGE_TAG build failed!&quot;
+    exit 110
+fi
+
+docker push $REGISTRY_URL/$REGISTRY_PROJECT/$IMAGE_NAME:$CD_DATE
+
+echo DEVOPS_IMAGE_TAG=$REGISTRY_URL/${REGISTRY_PROJECT}/$IMAGE_NAME:$IMAGE_TAG &gt; /jenkins/tmp/devopsTag.txt</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.plugins.parameterizedtrigger.BuildTrigger plugin="parameterized-trigger@2.35.2">
+      <configs>
+        <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+          <configs>
+            <hudson.plugins.parameterizedtrigger.CurrentBuildParameters/>
+          </configs>
+          <projects>103-jforum3-up</projects>
+          <condition>SUCCESS</condition>
+          <triggerWithNoParameters>false</triggerWithNoParameters>
+          <triggerFromChildProjects>false</triggerFromChildProjects>
+        </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+      </configs>
+    </hudson.plugins.parameterizedtrigger.BuildTrigger>
+  </publishers>
+  <buildWrappers>
+    <hudson.plugins.ws__cleanup.PreBuildCleanup plugin="ws-cleanup@0.34">
+      <deleteDirs>false</deleteDirs>
+      <cleanupParameter></cleanupParameter>
+      <externalDelete></externalDelete>
+    </hudson.plugins.ws__cleanup.PreBuildCleanup>
+  </buildWrappers>
+</project>

@@ -1,0 +1,177 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<maven2-moduleset plugin="maven-plugin@3.1.2">
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <com.dabsquared.gitlabjenkins.connection.GitLabConnectionProperty plugin="gitlab-plugin@1.5.5">
+      <gitLabConnection>gitlab</gitLabConnection>
+    </com.dabsquared.gitlabjenkins.connection.GitLabConnectionProperty>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>5</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <net.uaznia.lukanus.hudson.plugins.gitparameter.GitParameterDefinition plugin="git-parameter@0.9.2">
+          <name>Jforum3_Deploy_Branch</name>
+          <description></description>
+          <uuid>626f67ff-803a-4681-9762-f07c2f7e47cd</uuid>
+          <type>PT_BRANCH_TAG</type>
+          <branch></branch>
+          <tagFilter>*</tagFilter>
+          <branchFilter>.*</branchFilter>
+          <sortMode>NONE</sortMode>
+          <defaultValue></defaultValue>
+          <selectedValue>NONE</selectedValue>
+          <quickFilterEnabled>false</quickFilterEnabled>
+          <listSize>5</listSize>
+        </net.uaznia.lukanus.hudson.plugins.gitparameter.GitParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@3.9.0">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>http://10.1.1.149:808/seling/jforum3.git</url>
+        <credentialsId>2fea8342-5c4b-493a-8a4a-594a90ee559c</credentialsId>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>${Jforum3_Deploy_Branch}</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <browser class="hudson.plugins.git.browser.GitLab">
+      <url>http://10.1.1.149:808/seling/jforum3</url>
+      <version>10.5</version>
+    </browser>
+    <submoduleCfg class="list"/>
+    <extensions/>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <rootModule>
+    <groupId>jforum3</groupId>
+    <artifactId>jforum3</artifactId>
+  </rootModule>
+  <goals>clean package -DskipTests</goals>
+  <aggregatorStyleBuild>true</aggregatorStyleBuild>
+  <incrementalBuild>false</incrementalBuild>
+  <ignoreUpstremChanges>false</ignoreUpstremChanges>
+  <ignoreUnsuccessfulUpstreams>false</ignoreUnsuccessfulUpstreams>
+  <archivingDisabled>false</archivingDisabled>
+  <siteArchivingDisabled>false</siteArchivingDisabled>
+  <fingerprintingDisabled>false</fingerprintingDisabled>
+  <resolveDependencies>false</resolveDependencies>
+  <processPlugins>false</processPlugins>
+  <mavenValidationLevel>-1</mavenValidationLevel>
+  <runHeadless>false</runHeadless>
+  <disableTriggerDownstreamProjects>false</disableTriggerDownstreamProjects>
+  <blockTriggerWhenBuilding>true</blockTriggerWhenBuilding>
+  <settings class="jenkins.mvn.FilePathSettingsProvider">
+    <path>/root/apache-maven-3.5.2/conf/settings.xml</path>
+  </settings>
+  <globalSettings class="jenkins.mvn.FilePathGlobalSettingsProvider">
+    <path>/root/apache-maven-3.5.2/conf/settings.xml</path>
+  </globalSettings>
+  <reporters/>
+  <publishers/>
+  <buildWrappers>
+    <hudson.plugins.build__timeout.BuildTimeoutWrapper plugin="build-timeout@1.19">
+      <strategy class="hudson.plugins.build_timeout.impl.NoActivityTimeOutStrategy">
+        <timeoutSecondsString>600</timeoutSecondsString>
+      </strategy>
+      <operationList>
+        <hudson.plugins.build__timeout.operations.FailOperation/>
+      </operationList>
+    </hudson.plugins.build__timeout.BuildTimeoutWrapper>
+    <hudson.plugins.timestamper.TimestamperBuildWrapper plugin="timestamper@1.8.10"/>
+  </buildWrappers>
+  <prebuilders/>
+  <postbuilders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+set -ex
+export BUILD_ID=dontKillMe
+export BUILD_TEMP_PATH=/jenkins/tmp
+export REGISTRY_URL=reg.myhub.com
+export REGISTRY_PROJECT=jforum3
+export IMAGE_NAME=jforum3
+CD_DATE=`date +%Y%m%d%H`
+export IMAGE_TAG=$CD_DATE
+mkdir -p $BUILD_TEMP_PATH
+
+echo &apos;************************No.1  start copy war ************************&apos;
+# check related dir 
+if [ ! -f &quot;$BUILD_TEMP_PATH&quot; ];then
+	mkdir -p $BUILD_TEMP_PATH
+fi
+# rm old jar
+	rm -rf $BUILD_TEMP_PATH/*
+    
+echo &quot;copy jar...&quot;
+cp ${WORKSPACE}/target/*.war ${BUILD_TEMP_PATH}/jforum3.war
+cp ${WORKSPACE}/dockerfile ${BUILD_TEMP_PATH}
+
+echo &apos;************************No.1 copy done...************************&apos;
+
+
+cd $BUILD_TEMP_PATH
+docker login --username admin --password Harbor12345 $REGISTRY_URL
+docker build -t $REGISTRY_URL/$REGISTRY_PROJECT/$IMAGE_NAME:$CD_DATE .
+
+if [ $? -eq 0 ];then
+    echo &quot;Docker Image: $REGISTRY_URL/${REGISTRY_PROJECT}/$IMAGE_NAME:$IMAGE_TAG build successed!&quot;
+else
+    echo &quot;Docker Image: $REGISTRY_URL/${REGISTRY_PROJECT}/$IMAGE_NAME:$IMAGE_TAG build failed!&quot;
+    exit 110
+fi
+
+docker push $REGISTRY_URL/$REGISTRY_PROJECT/$IMAGE_NAME:$CD_DATE
+
+
+export RANCHER_URL=&quot;http://10.1.1.102&quot;
+export RANCHER_ACCESS_KEY=&quot;9BC5E357498705E65D34&quot;
+export RANCHER_SECRET_KEY=&quot;mZ1TqbdQozshw4qJmx3EXx2N4vWEGJopJZh8R3qg&quot;
+export STACK_NAME=jforum
+
+echo &quot;version: &apos;2&apos;&quot; &gt;docker-compose.yml
+echo &quot;services:&quot; &gt;&gt;docker-compose.yml
+echo &quot;  jforum3:&quot; &gt;docker-compose.yml
+echo &quot;    image: &quot;$REGISTRY_URL/$REGISTRY_PROJECT/$IMAGE_NAME:$CD_DATE &gt;&gt;docker-compose.yml
+echo &quot;    stdin_open: true&quot; &gt;&gt;docker-compose.yml
+echo &quot;    tty: true&quot; &gt;&gt;docker-compose.yml
+echo &quot;    ports:&quot; &gt;&gt;docker-compose.yml
+echo &quot;    - 7001:8080/tcp&quot; &gt;&gt;docker-compose.yml
+echo &quot;    labels:&quot; &gt;&gt;docker-compose.yml
+echo &quot;      io.rancher.container.pull_image: always&quot; &gt;&gt;docker-compose.yml
+
+echo &quot;version: &apos;2&apos;&quot; &gt;rancher-compose.yml
+echo &quot;services:&quot; &gt;&gt;rancher-compose.yml
+echo &quot;  jforum3:&quot; &gt;&gt;rancher-compose.yml
+echo &quot;    scale: 1&quot; &gt;&gt;rancher-compose.yml
+echo &quot;    start_on_create: true&quot; &gt;&gt;rancher-compose.yml
+
+
+rancher-compose -p ${STACK_NAME} -f ./docker-compose.yml -r ./rancher-compose.yml up -d --force-upgrade --confirm-upgrade
+</command>
+    </hudson.tasks.Shell>
+  </postbuilders>
+  <runPostStepsIfResult>
+    <name>UNSTABLE</name>
+    <ordinal>1</ordinal>
+    <color>YELLOW</color>
+    <completeBuild>true</completeBuild>
+  </runPostStepsIfResult>
+</maven2-moduleset>

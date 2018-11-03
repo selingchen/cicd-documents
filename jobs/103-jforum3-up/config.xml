@@ -1,0 +1,112 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <com.dabsquared.gitlabjenkins.connection.GitLabConnectionProperty plugin="gitlab-plugin@1.5.5">
+      <gitLabConnection>gitlab</gitLabConnection>
+    </com.dabsquared.gitlabjenkins.connection.GitLabConnectionProperty>
+    <EnvInjectJobProperty plugin="envinject@2.1.5">
+      <info>
+        <secureGroovyScript plugin="script-security@1.44">
+          <script>def map = [:]
+	map[&quot;RANCHER_URL_JPARA&quot;] = &quot;http://10.1.1.102&quot;
+	map[&quot;RANCHER_ACCESS_KEY_JPARA&quot;] = &quot;9BC5E357498705E65D34&quot;
+        map[&quot;RANCHER_SECRET_KEY_JPARA&quot;] =&quot;mZ1TqbdQozshw4qJmx3EXx2N4vWEGJopJZh8R3qg&quot;
+if(Deploy_Type.contains(&quot;test&quot;)){
+        map[&quot;STACK_NAME&quot;] = &quot;jforum3-test&quot;
+}else if(Deploy_Type.contains(&quot;prod&quot;)){
+        map[&quot;STACK_NAME&quot;] = &quot;jforum3-prod&quot;
+	map[&quot;RANCHER_URL_JPARA&quot;] = &quot;http://10.1.1.103&quot;
+	map[&quot;RANCHER_ACCESS_KEY_JPARA&quot;] = &quot;D55B4E9D302F35F268AE&quot;
+        map[&quot;RANCHER_SECRET_KEY_JPARA&quot;] = &quot;kbY4EzuF7RJmr44qVqA3ry1n7dNhKTJTUf1RzJHt&quot;
+}
+return map</script>
+          <sandbox>false</sandbox>
+        </secureGroovyScript>
+        <loadFilesFromMaster>false</loadFilesFromMaster>
+      </info>
+      <on>true</on>
+      <keepJenkinsSystemVariables>true</keepJenkinsSystemVariables>
+      <keepBuildVariables>true</keepBuildVariables>
+      <overrideBuildParameters>false</overrideBuildParameters>
+    </EnvInjectJobProperty>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>5</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+set -ex
+
+export BUILD_ID=dontKillMe
+
+# $DEVOPS_IMAGE_TAG  镜像地址
+# $STACK_NAME  
+# $RANCHER_URL_JPARA
+# $RANCHER_ACCESS_KEY_JPARA
+# $RANCHER_SECRET_KEY_JPARA
+# $WORKSPACE
+ROOT_PATH=/jenkins/tmp
+
+export RANCHER_URL=$RANCHER_URL_JPARA
+export RANCHER_ACCESS_KEY=$RANCHER_ACCESS_KEY_JPARA
+export RANCHER_SECRET_KEY=$RANCHER_SECRET_KEY_JPARA
+
+RANCHER_COMPOSE_HOME=$ROOT_PATH/$STACK_NAME
+
+# create Dockerfile/ Rancher file Directory
+rm -rf $RANCHER_COMPOSE_HOME
+mkdir -p $RANCHER_COMPOSE_HOME
+cd $RANCHER_COMPOSE_HOME
+
+#  docker-compose.yml and rancher-compose.yml
+
+echo &quot;**********************No.1 write docker-compose.yml**********************&quot;
+echo &quot;version: &apos;2&apos;&quot; &gt;docker-compose.yml
+echo &quot;services:&quot; &gt;&gt;docker-compose.yml
+echo &quot;  jforum3:&quot; &gt;&gt;docker-compose.yml
+echo &quot;    image: &quot;${DEVOPS_IMAGE_TAG}&gt;&gt;docker-compose.yml
+echo &quot;    stdin_open: true&quot; &gt;&gt;docker-compose.yml
+echo &quot;    tty: true&quot; &gt;&gt;docker-compose.yml
+echo &quot;    ports:&quot; &gt;&gt;docker-compose.yml
+echo &quot;    - 6001:8080/tcp&quot; &gt;&gt;docker-compose.yml
+echo &quot;    labels:&quot; &gt;&gt;docker-compose.yml
+echo &quot;      io.rancher.container.pull_image: always&quot; &gt;&gt;docker-compose.yml
+echo &quot;**********************No.1 end  write docker-compose.yml**********************&quot;
+
+echo &quot;**********************No.2 start write rancher-compose.yml************************&quot;
+echo &quot; version: &apos;2&apos; &quot; &gt; rancher-compose.yml
+echo &quot; services: &quot; &gt;&gt; rancher-compose.yml
+echo &quot;   jforum3: &quot; &gt;&gt; rancher-compose.yml
+echo &quot;     scale: 1 &quot; &gt;&gt; rancher-compose.yml
+echo &quot;     start_on_create: true &quot; &gt;&gt; rancher-compose.yml
+echo &quot;**********************No.2 end  write rancher-compose.yml********************&quot;
+
+
+rancher-compose -p ${STACK_NAME} -f ./docker-compose.yml -r ./rancher-compose.yml up -d --force-upgrade --confirm-upgrade</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers>
+    <hudson.plugins.ws__cleanup.PreBuildCleanup plugin="ws-cleanup@0.34">
+      <deleteDirs>false</deleteDirs>
+      <cleanupParameter></cleanupParameter>
+      <externalDelete></externalDelete>
+    </hudson.plugins.ws__cleanup.PreBuildCleanup>
+  </buildWrappers>
+</project>
