@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<HEAD>
+  <TITLE>Build report</TITLE>
+  <STYLE type="text/css">
+    BODY, TABLE, TD, TH, P {
+      font-family:Verdana,Helvetica,sans serif;
+      font-size:11px;
+      color:black;
+      vertical-align:middle;
+    }
+    h1 { color:black; }
+    h2 { color:black; }
+    h3 { color:black; }
+    .bg1 { color:white; background-color:#0000C0; font-size:130% }
+    .bg2 { color:white; background-color:#4040FF; font-size:110% }
+    .bg3 { color:white; background-color:#8080FF; }
+    .test_passed { color:green; }
+    .test_failed { color:red; }
+    TD.console { font-family:Courier New; }
+    TD.item { color:blue }
+    th { color:blue }
+    .change-add { color: #272; }
+    .change-delete { color: #722; }
+    .change-edit { color: #247; }
+    .grayed { color: #AAA; }
+    .error { color: #A33; }
+    pre.console {
+      color: red;
+      font-family: "Lucida Console", "Courier New";
+      padding: 5px;
+      line-height: 15px;
+      background-color: #EEE;
+      border: 1px solid #DDD;
+    }
+  </STYLE>
+</HEAD>
+
+<BODY>
+<!-- GENERAL INFO -->
+<TABLE border="1">
+<TR>
+  <TD align="left"><IMG SRC="${rooturl}static/e59dfe28/images/32x32/<%= build.result.
+toString() == 'SUCCESS' ? "blue.gif" : build.result.toString() == 'FAILURE' ? 'red.gif' :
+'yellow.gif' %>" /></TD>
+  <TD align="left"><B style="font-size: 150%;">BUILD ${build.result}</B></TD>
+</TR>
+  <TR><TD class="item"><B style="font-size: 130%;">项目名称：</B></TD><TD style="font-size:
+130%;"><B>${project.name}</B></TD></TR>
+  <TR><TD class="item"><B style="font-size: 130%;">Git分支：</B></TD><TD style="font-size:
+130%;"><B>${build.environment['GIT_BRANCH']}</B></TD></TR>
+  <TR><TD class="item"><B style="font-size: 130%;">构建地址：</B></TD><TD style="font-size:
+130%;"><A href="${rooturl}${build.url}"><B>${rooturl}${build.url}</B></A></TD></TR>
+  <TR><TD class="item"><B style="font-size: 130%;">构建日志：</B></TD><TD style="font-size:
+130%;"><A href="${rooturl}${build.url}console"><B>${rooturl}${build.url}console</B></A>
+</TD></TR>
+  <TR><TD class="item"><B style="font-size: 130%;">构建日期：</B></TD><TD style="font-size:
+130%;"><B>${it.timestampString}</B></TD></TR>
+  <TR><TD class="item"><B style="font-size: 130%;">构建时长：</B></TD><TD style="font-size:
+130%;"><B>${build.durationString}</B></TD></TR>
+  <TR><TD class="item"><B style="font-size: 130%;">触发原因：</B></TD><TD style="font-size:
+130%;"><B><% build.causes.each() { cause -> %> ${cause.shortDescription} <% } %></B></TD>
+</TR>
+</TABLE>
+<BR/>
+<BR/>
+
+
+<!-- Robot Framework Results -->
+<%
+import java.text.DateFormat
+import java.text.SimpleDateFormat
+
+def robotResults = false
+def actions = build.actions // List<hudson.model.Action>
+actions.each() { action ->
+  if( action.class.simpleName.equals("RobotBuildAction") ) { //
+  hudson.plugins.robot.RobotBuildAction
+  robotResults = true %>
+
+  <TABLE width="100%">
+    <TR>
+      <TD class="bg1">
+        <B>自动化接口测试结果</B>
+      </TD>
+    </TR>
+  </TABLE>
+  <BR/>
+  <TABLE id="robot-summary-table" border="1">
+  <THEAD>
+    <TR bgcolor="#F3F3F3">
+      <TH style="font-size: 130%;"><B>概述</B></TH>
+      <TH style="font-size: 130%;"><B>总计</B></TH>
+      <TH style="font-size: 130%;"><B>失败</B></TH>
+      <TH style="font-size: 130%;"><B>通过</B></TH>
+      <TH style="font-size: 130%;"><B>通过率%</B></TH>
+    </TR>
+  </THEAD>
+    <TR>
+        <TH align="left"><B style="font-size: 130%;">所有用例</B></TH>
+        <TD><B style="font-size: 130%;">${action.result.overallTotal}</B></TD>
+        <TD><B style="font-size: 130%; color: <%= action.result.overallFailed == 0 ?
+        "#000000" : "red" %>">${action.result.overallFailed}</B></TD>
+        <TD><B style="font-size: 130%; color: #66CC00">${action.result.overallPassed}
+        </B></TD>
+        <TD><B style="font-size: 130%; color: <%= action.overallPassPercentage == 100 ?
+        "#66CC00" : "#FF3333" %>">${action.overallPassPercentage}</B></TD>
+    </TR>
+    <TR>
+      <TH align="left"><B style="font-size: 130%;">运行所需时间</B></TH>
+        <TD colspan=4 align="center"><B style="font-size: 130%;">${action.result.
+        humanReadableDuration}</B></TD>
+    </TR>
+    <TR><TD colspan=5><A href="${rooturl}${build.url}robot"><B style="font-size: 130%;
+    ">> 单击查看详细结果</B></A></TD></TR>
+    <TR><TD colspan=5><A href="${rooturl}${build.url}robot/report/report.html">
+    <B style="font-size: 130%;">> 单击查看测试报告</B></A></TD></TR>
+    <TR><TD colspan=5><A href="${rooturl}${build.url}robot/report/log.html"><B style=
+    "font-size: 130%;">> 单击查看测试日志</B></A></TD></TR>
+  </TABLE>
+  <BR/>
+
+
+  <TABLE cellspacing='0' cellpadding='1' border='1'>
+    <TR>
+      <TH style="font-size: 120%;"><B>名称</B></TH>
+      <TH style="font-size: 120%;"><B>共计</B></TH>
+      <TH style="font-size: 120%;"><B>成功</B></TH>
+      <TH style="font-size: 120%;"><B>失败</B></TH>
+      <TH style="font-size: 120%;"><B>失败的用例</B></TH>
+    </TR>
+<%
+def allSuites = action.result.getSuites()
+allSuites.each() { testSuite ->
+%>
+
+    <TR>
+      <TD align="left"><B style="color: #1874CD">L1模块：</B><B><%= testSuite.getName() %>
+      </B></TD>
+      <TD align="center"><B><%= testSuite.getTotal() %></B></TD>
+      <TD align="center"><B style="color: #66CC00"><%= testSuite.getPassed() %></B></TD>
+      <TD align="center"><B style="color: <%= testSuite.getFailed() == 0 ? "#000000" :
+      "#FF3333" %>"><%= testSuite.getFailed() %></B></TD>
+      <TD align="center" style="color: #1874CD"><B>详情如下</B></TD>
+    </TR>
+
+<%
+  def childSuites = testSuite.getChildSuites()
+  childSuites.each() { childSuite ->
+%>
+
+    <TR>
+      <TD align="left"><B style="color: #1874CD">L2测试套件：</B><B><%= childSuite.getName
+()  %> </B></TD>
+      <TD align="center"><B><%= childSuite.getTotal() %></B></TD>
+      <TD align="center"><B style="color: #66CC00"><%= childSuite.getPassed() %></B></TD>
+      <TD align="center"><B style="color: <%= childSuite.getFailed() == 0 ? "#000000" :
+      "#FF3333" %>"><%= childSuite.getFailed() %></B></TD>
+      <TD align="center">
+<%
+    def childFailedTests = childSuite.getAllFailedCases()
+    if (!childFailedTests.isEmpty()) {
+      childFailedTests.each() { childFailedTestsResult ->
+%>
+        <P><B style="color: red"><%= childFailedTestsResult.getDisplayName() %></B></P>
+<% } %>
+<%  } else { %>
+        <P><B>无</B></P>
+<% } %>
+      </TD>
+    </TR>
+
+<% } %>
+<% } %>
+  </TABLE>
+  <BR/>
+  <BR/>
+<% } %>
+<% } %>
+    
+<% if (!robotResults) { %>
+  <p>No Robot Framework test results found.</p>
+<% } %>
+
+
+<!-- GIT COMMIT INFOR -->
+  <TABLE width="100%">
+    <TR>
+      <TD class="bg1">
+        <B>代码提交</B>
+      </TD>
+    </TR>
+  </TABLE>
+<%
+def changeSet = build.changeSet
+if (changeSet != null) {
+  hadChanges = false %>
+
+  <TABLE cellspacing="0" cellpadding="4" border="1" align="left">
+  <THEAD>
+    <TR bgcolor="#F3F3F3">
+      <TH><B style="font-size: 120%;">提交人</B></TH>
+      <TH><B style="font-size: 120%;">提交标题</B></TH>
+      <TH><B style="font-size: 120%;">修改内容</B></TH>
+      <TH><B style="font-size: 120%;">提交ID</B></TH>
+    </TR>
+  </THEAD>
+
+  <TBODY>
+<%  changeSet.each { cs ->
+    hadChanges = true
+    aUser = cs.author %>
+    <TR>
+      <TD><B style="font-size: 120%;"><A href="http://10.142.78.36/pages/viewpage.
+      action?pageId=2396359">${cs.committer}</A> <A href="Mailto:${cs.committerEmail}">
+      (${cs.committerEmail})</A></B></TD>
+      <TD style="font-size: 120%;">${cs.comment}</TD>
+      <TD>
+<%        cs.affectedFiles.each { %>
+        <LI class="change-${it.editType.name}"><b>${it.editType.name}</b>:${it.path}</LI>
+<%        } %>
+      </TD>
+      <TD style="font-size: 120%;"><A href="http://10.142.78.33:8080/QualityAssurance/
+      robotframework-auto-test/commit/${cs.id}">${cs.id}</A></TD>
+    </TR>
+<%  } %>
+
+<% if (!hadChanges) { %>
+    <TR>
+      <TD colspan="4" align="center"><B>No Changes</B></TD>
+    </TR>
+<%  } %>
+  </TBODY>
+  </TABLE>
+<BR/>
+<BR/>
+<% } %>
+<BR/>
+<BR/>
+
+</BODY>

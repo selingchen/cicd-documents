@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<HEAD>
+  <TITLE>Build report</TITLE>
+  <STYLE type="text/css">
+    BODY, TABLE, TD, TH, P {
+      font-family:Verdana,Helvetica,sans serif;
+      font-size:11px;
+      color:black;
+    }
+    .size1 { font-size: 130%; color: <%= build.result.toString() == 'FAILURE' ? "#FF3333":
+"black" %>; }
+    h2 { color:black; }
+    TR.bg1 { bgcolor="#F3F3F3" }
+    TD.bg1 { color:white; background-color:#0000C0; font-size:130% }
+    .test_passed { color:#66CC00; }
+    .test_failed { color:red; }
+    TD.console { font-family:Courier New; }
+    TD.item { color:blue }
+    TH { color:blue }
+    .change-add { color: #272; }
+    .change-delete { color: #722; }
+    .change-edit { color: #247; }
+    .grayed { color: #AAA; }
+    .error { color: #A33; }
+    pre.console {
+      color: red;
+      font-family: "Lucida Console", "Courier New";
+      padding: 5px;
+      line-height: 15px;
+      background-color: #EEE;
+      border: 1px solid #DDD;
+    }
+  </STYLE>
+</HEAD>
+
+<BODY>
+<!-- GENERAL INFO -->
+<TABLE border="1">
+  <TR>
+    <TD align="left"><IMG SRC="${rooturl}static/e59dfe28/images/32x32/<%= build.result.
+toString() == 'SUCCESS' ? "blue.gif" : build.result.toString() == 'FAILURE' ? 'red.gif':
+'yellow.gif' %>" /></IMG></TD>
+    <TD align="left"><B style="font-size: 150%; color: <%= build.result.toString() == 
+'FAILURE' ? "#FF3333" : "black" %>;">BUILD ${build.result}</B></TD>
+  </TR>
+  <TR><TD class="item"><B class="size1">JenkinsJob：</B></TD><TD><B class="size1">${project.
+name} </B></TD></TR>
+  <TR><TD class="item"><B class="size1">构建编号：</B></TD><TD><B class="size1">${build.
+number} </B></TD></TR>
+  <TR><TD class="item"><B class="size1">使用Git分支：</B></TD><TD><B class="size1">$ {build.
+environment['GIT_BRANCH']}</B></TD></TR>
+  <TR><TD class="item"><B class="size1">构建地址：</B></TD><TD><A href="${rooturl}${build.
+url}"><B class="size1">${rooturl}${build.url}</B></A></TD></TR>
+  <TR><TD class="item"><B class="size1">构建日志：</B></TD><TD><A href="${rooturl}${build.
+url} console"><B class="size1">${rooturl}${build.url}console</B></A></TD></TR>
+  <TR><TD class="item"><B class="size1">构建日期：</B></TD><TD><B class="size1">${it.
+timestampString}</B></TD></TR>
+  <TR><TD class="item"><B class="size1">构建时长：</B></TD><TD><B class="size1">${build.
+durationString}</B></TD></TR>
+  <TR><TD class="item"><B class="size1">触发原因：</B></TD><TD><B class="size1"><% build.
+causes.each() { cause -> %> ${cause.shortDescription} <%  } %></B></TD></TR>
+</TABLE>
+<BR/>
+<BR/>
+
+<!-- GIT COMMIT INFOR -->
+<TABLE width="100%">
+  <TR><TD class="bg1"><B>自动触发任务的代码提交内容</B></TD></TR>
+</TABLE>
+
+<%
+def changeSet = build.changeSet
+if (changeSet != null) {
+  hadChanges = false
+%>
+
+<TABLE cellspacing="0" cellpadding="4" border="1" align="left">
+  <THEAD>
+    <TR class="bg1">
+      <TH><B style="font-size: 120%;">提交人</B></TH>
+      <TH><B style="font-size: 120%;">提交标题</B></TH>
+      <TH><B style="font-size: 120%;">修改内容</B></TH>
+      <TH><B style="font-size: 120%;">提交ID</B></TH>
+    </TR>
+  </THEAD>
+  <TBODY>
+<%
+  changeSet.each { cs ->
+    hadChanges = true
+    aUser = cs.author
+%>
+    <TR>
+      <TD><B style="font-size: 120%;"><A href="http://10.142.78.36/pages/viewpage.action?
+pageId=2396359">${cs.committer}</A><A href="Mailto:${cs.committerEmail}">($
+{cs.committerEmail})</A></B></TD>
+      <TD style="font-size: 120%;">${cs.comment}</TD>
+      <TD>
+<%
+    cs.affectedFiles.each {
+%>
+        <LI class="change-${it.editType.name}"><b>${it.editType.name}</b>:${it.path}</LI>
+<%
+    }
+%>
+      </TD>
+      <TD style="font-size: 120%;"><A href="http://10.142.78.33:8080/DataPlatform/todp-
+one/commit/${cs.id}">${cs.id}</A></TD>
+    </TR>
+<%
+  }
+  if (!hadChanges) {
+%>
+    <TR>
+      <TD colspan="4" align="center"><B>无代码变更</B></TD>
+    </TR>
+<%
+  }
+%>
+  </TBODY>
+</TABLE>
+<BR/>
+<BR/>
+<%
+}
+%>
+
+
+<!-- Sonar Scanner Result -->
+<%
+if (build.environment['Sonar_Project_Key']) {
+  Sonar_Base_Url = "${build.environment['SONAR_HOST_URL']}"
+  Api_Url = "api/qualitygates/project_status"
+  projectKey = "projectKey=${build.environment['Sonar_Project_Key']}"
+  Entire_Url = "${Sonar_Base_Url}/${Api_Url}?${projectKey}"
+  Sonar_Result = Entire_Url.toURL().text
+
+  if (Sonar_Result.contains('"projectStatus":{"status":"OK"')) {
+      Sonar_Status = "Pass"
+   } else if (Sonar_Result.contains('"projectStatus":{"status":"ERROR"')) {
+       Sonar_Status = "Fail"
+   } else {
+       Sonar_Status = "Fail"
+   }
+%>
+<TABLE width="100%">
+  <TR><TD class="bg1"><B>Sonar代码扫描</B></TD></TR>
+</TABLE>
+
+<%
+  if(Sonar_Status=="Pass") {
+%>
+<P><B style="font-size: 130%;"><font color="#66CC00">Sonar扫描通过</font></B></P>
+<P>
+<B style="font-size: 130%;"><font color="#66CC00">该项目最新扫描结果链接：</font></B>
+<A href="${build.environment['SONAR_HOST_URL']}/dashboard/index/${build.environment
+['Sonar_Project_Key']}"><B>${build.environment['SONAR_HOST_URL']}/dashboard/index/
+${build.environment['Sonar_Project_Key']}</B></A>
+</P>
+<%
+  } else {
+%>
+<P><B style="font-size: 130%;"><font color="#FF3333">Sonar扫描失败，详情查看如下链接：</font>
+</B></P>
+<P>
+<B style="font-size: 130%;"><font color="#FF3333">该项目最新扫描结果链接：</font></B>
+<A href="${build.environment['SONAR_HOST_URL']}/dashboard/index/${build.environment
+['Sonar_Project_Key']}"><B>${build.environment['SONAR_HOST_URL']}/dashboard/index/
+${build.environment['Sonar_Project_Key']}</B></A>
+</P>
+<BR/>
+<BR/>
+<%
+  }
+}
+%>
+
+
+<!-- UNIT TEST RESULT Summary -->
+<%
+def testResult = build.testResultAction
+if (testResult) {
+  if (testResult.failCount) {
+    lastBuildSuccessRate = String.format("%.2f", (testResult.totalCount - testResult.
+failCount) * 100f / testResult.totalCount)
+    lastBuildSuccessCount = testResult.totalCount - testResult.failCount - testResult.
+skipCount
+  }
+  else {
+    lastBuildSuccessRate = 100f;
+    lastBuildSuccessCount = testResult.totalCount - testResult.skipCount
+  }
+
+  startedPassing = []
+  startedFailing = []
+  failing = []
+
+  previousFailedTestCases = new HashSet()
+  currentFailedTestCase = new HashSet()
+
+  if (build.previousBuild?.testResultAction) {
+    build.previousBuild.testResultAction.failedTests.each {
+      previousFailedTestCases << it.simpleName + "." + it.safeName
+    }
+  }
+
+  testResult.failedTests.each { tr ->
+      packageName = tr.packageName
+      className = tr.simpleName
+      testName = tr.safeName
+      displayName = className + "." + testName
+
+      currentFailedTestCase << displayName
+      url = "${rooturl}${build.url}testReport/$packageName/$className/$testName"
+      if (tr.age == 1) {
+        startedFailing << [displayName: displayName, url: url, age: 1]
+      }
+      else {
+        failing << [displayName: displayName, url: url, age: tr.age]
+      }
+  }
+
+  startedPassing = previousFailedTestCases - currentFailedTestCase
+  startedFailing = startedFailing.sort {it.displayName}
+  failing = failing.sort {it.displayName}
+  startedPassing = startedPassing.sort()
+}
+%>
+
+<%
+if (testResult) {
+%>
+<TABLE width="100%">
+  <TR><TD class="bg1"><B>单元测试结果</B></TD></TR>
+</TABLE>
+
+<TABLE id="unittest-summary-table" border="1">
+  <THEAD>
+    <TR bgcolor="#F3F3F3">
+      <TH style="font-size: 130%;">概述</TH>
+      <TH style="font-size: 130%;">总计</TH>
+      <TH style="font-size: 130%;">失败</TH>
+      <TH style="font-size: 130%;">跳过</TH>
+      <TH style="font-size: 130%;">通过</TH>
+      <TH style="font-size: 130%;">通过率%</TH>
+    </TR>
+  </THEAD>
+  <TBODY>
+    <TR>
+    <TH align="left" style="font-size: 130%;">所有用例</TH>
+      <TD><B style="font-size: 130%;">${testResult.totalCount}</B></TD>
+<%
+  if (testResult.failCount) {
+%>
+      <TD class="test_failed"><B style="font-size: 130%;">${testResult.failCount}</B></TD>
+<%
+  } else {
+%>
+      <TD><B style="font-size: 130%;">0</B></TD>
+<%
+  }
+%>
+<%
+  if (testResult.skipCount) {
+%>
+      <TD><B style="font-size: 130%;">${testResult.skipCount}</B></TD>
+<%
+  } else {
+%>
+      <TD><B style="font-size: 130%;">0</B></TD>
+<%
+  }
+%>
+      <TD class="test_passed"><B style="font-size: 130%;">${lastBuildSuccessCount}</B></TD>
+      <TD style="color: <%= lastBuildSuccessRate == 100 ? "#66CC00" : "#FF3333" %>">
+<B style="font-size: 130%;">${lastBuildSuccessRate}%</B></TD>
+    </TR>
+    <TR>
+      <TD colspan=6 align="center" style="font-size: 130%;"><a href="${rooturl}${build.
+url}testReport">>单击查看详细报告</a></TD>
+    </TR>
+  </TBODY>
+</BODY>
+<BR/>
+<BR/>
+
+<%
+} else {
+%>
+<TABLE width="100%">
+  <TR><TD class="bg1"><B>单元测试结果</B></TD></TR>
+</TABLE>
+<P><B>模块无单元测试用例</B><P>
+<BR/>
+<BR/>
+<%
+}
+%>
+
+<!-- UNIT TEST RESULT Details -->
+<%
+def junitResultList = it.JUnitTestResult
+try {
+ def cucumberTestResultAction = it.getAction("org.jenkinsci.plugins.cucumber.
+jsontestsupport.CucumberTestResultAction")
+ junitResultList.add(cucumberTestResultAction.getResult())
+} catch(e) {
+        //cucumberTestResultAction not exist in this build
+}
+if (junitResultList.size() > 0) {
+%>
+<TABLE width="100%" border=1>
+  <THEAD>
+    <TR bgcolor="#F3F3F3">
+      <TH>Package名称</TH>
+      <TH>失败</TH>
+      <TH>成功</TH>
+      <TH>跳过</TH>
+      <TH>共计</TH>
+      <TH>失败的用例</TH>
+    </TR>
+  </THEAD>
+<%
+  junitResultList.each { junitResult ->
+    junitResult.getChildren().each { packageResult ->
+%>
+  <TBODY>
+    <TR>
+      <TD><B>${packageResult.getName()}</B></TD>
+      <TD class="test_failed"><B>${packageResult.getFailCount()}</B></TD>
+      <TD class="test_passed"><B>${packageResult.getPassCount()}</B></TD>
+      <TD>${packageResult.getSkipCount()}</TD>
+      <TD>${packageResult.getPassCount()+packageResult.getFailCount()+packageResult.
+getSkipCount()}</TD>
+      <TD>
+<%
+      packageResult.getFailedTests().each{ failed_test ->
+%>
+        <LI class="test_failed"><B>Failed: ${failed_test.getFullName()}</B></LI>
+<%
+      }
+%>
+      </TD>
+    </TR>
+  </TBODY>
+<%
+    }
+  }
+%>
+</TABLE>
+<BR/>
+<BR/>
+<%
+}
+%>
+
+
+<!-- MAVEN ARTIFACTS -->
+<%
+try {
+  def mbuilds = build.moduleBuilds
+  if(mbuilds != null) {
+%>
+<TABLE width="100%">
+  <TR><TD class="bg1"><B>构建的ARTIFACTS</B></TD></TR>
+</TABLE>
+
+<TABLE width="100%" border=1>
+  <THEAD>
+    <TR bgcolor="#F3F3F3">
+      <TH>名称</TH>
+      <TH>构建内容</TH>
+    </TR>
+  </THEAD>
+<%
+    try {
+      mbuilds.each() { m ->
+%>
+  <TBODY>
+    <TR>
+      <TD><B>${m.key.displayName}</B></TD>
+<%
+        m.value.each() { mvnbld ->
+          def artifactz = mvnbld.artifacts
+          if(artifactz != null && artifactz.size() > 0) {
+%>
+      <TD>
+<%
+            artifactz.each() { f ->
+%>
+        <LI><a href="${rooturl}${mvnbld.url}artifact/${f}">${f}</a></LI>
+<%
+            }
+%>
+      </TD>
+    </TR>
+<%
+          }
+        }
+      }
+    } catch(e) {
+      // do anything
+    }
+%>
+  </TBODY>
+</TABLE>
+<%
+  }
+} catch(e) {
+  // do anything
+}
+%>
+<BR/>
+<BR/>
+
+<!-- CONSOLE OUTPUT -->
+<%
+if(build.result==hudson.model.Result.FAILURE) {
+%>
+<TABLE width="100%">
+  <TR><TD class="bg1"><B>错误日志输出</B></TD></TR>
+</TABLE>
+
+<P><B style="font-size: 130%;">详细日志请单击查看：</B><A href="${rooturl}${build.url}
+console"> <B>${rooturl}${build.url}console</B></A></P>
+
+<%
+  log = build.getLog(100).join("\n")
+  warningsResultActions = build.actions.findAll { it.class.simpleName ==
+"WarningsResultAction" }
+  if (warningsResultActions.size() > 0) {
+%>
+<h2>Build errors</h2>
+  <ul>
+<%
+    warningsResultActions.each {
+      newWarnings = it.result.newWarnings
+      if (newWarnings.size() > 0) {
+        newWarnings.each {
+          if (it.priority.toString() == "HIGH") {
+%>
+    <li class="error">In <b>${it.fileName}</b> at line ${it.primaryLineNumber}:
+${it.message}</li>
+<%
+          }
+        }
+      }
+    }
+%>
+  </ul>
+<%
+  }
+%>
+ <pre class="console">${log}</pre>
+<%
+}
+%>
+
+</BODY>

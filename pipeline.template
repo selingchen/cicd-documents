@@ -1,0 +1,164 @@
+node('dev-node') {
+
+    stage("Stage1 - 拉取指定分支代码，进行Maven构建") {
+
+        // checkout步骤用于拉取GitLab的代码
+        checkout([
+            $class: 'GitSCM', 
+            branches: [[name: "*/master"]], 
+            extensions: [
+                [$class: 'CleanBeforeCheckout'], 
+                [$class: 'PruneStaleBranch']
+            ], 
+            userRemoteConfigs: [
+                [credentialsId: 'GitLab-Root', url: "http://192.168.56.101/qianqi
+                /jforum3.git"]
+            ]
+        ])
+
+        // readMavenPom指定Maven构建使用的POM路径（相对于项目根目录的路径）
+        // 如果没有这一步骤，下面的withMaven会默认使用根目录下面的pom.xml
+        readMavenPom (
+            file: "pom.xml"
+        )
+
+        // 这里的try-catch用于防止maven构建失败，发送邮件给相关人员进行通知
+        try {
+            // withMaven会执行Maven构建指令并且在Jenkins任务界面生成Unit Test结果
+            // 这里为JDK和Maven参数填写的是在Jenkins中配置的一个ID，不是具体的执行路径，在Jenkins
+            // 中已经配置好，所以这里无须修改
+            // 配置人员需要修改的是sh部分的执行指令，根据情况来填写，Build_Config是从构建参数中传入的
+            withMaven(jdk: 'JDK8', maven: 'CentOS7-Maven') {
+              sh 'mvn clean package -DskipTests'
+            } 
+        } catch (err) {
+            // 输出错误
+            println err
+            // 发送构建失败邮件通知
+            emailext (
+                body: """
+                <p>拉取源码进行Maven构建打包失败<p>
+                <p>Pipeline页面： <a href='${env.JENKINS_URL}blue/organizations/jenkins/
+                ${env.JOB_NAME}/detail/${env.JOB_NAME}/${env.BUILD_NUMBER}/pipeline'
+                >${env.JOB_NAME}(pipeline page)</a></p>
+                <p>请查看Pipeline页面的日志定位问题</a></p>
+                """,
+                to: "${Mail_List}",
+                subject: "${env.JOB_NAME}-${env.BUILD_NUMBER}-Maven构建打包失败",
+                attachLog: true
+            )
+
+            // 中止该任务并输出错误信息
+            error "Maven构建打包失败"
+        }    
+    }
+
+    stage("Stage2 - 把构建包传到部署的机器上") {
+
+        // 这里的try-catch用于防止传输文件到远程机器失败，发送邮件给相关人员进行通知
+        try {
+            // sshagent的参数是一个credential列表，可以有多个，也可以有一个
+            // 这里只在环境配置中配置一个Server1的认证，至此，可以登录该远程Server1进行部署操作
+            sshagent(["${Remote_Server1_Credential}"]) {
+                  // 这里的shell脚本部分主要用于把Jenkins节点构建的可执行文件上传到远程部署机器上，
+                  // 然后测试下是否可以远程登录，并且查看文件是否传输成功
+                sh '''
+                scp ${Maven_Package_Path} ${Remote_Server1_Username}@${Remote_Server1_
+                IP}:${Remote_Server1_CopyToPath}
+                ssh -t -t -o StrictHostKeyChecking=no ${Remote_Server1_Username}
+                @${Remote_ Server1_IP} """
+                cd ${Remote_Server1_CopyToPath}
+                ls -al
+                """
+                '''
+            }
+        } catch (err) {
+            // 输出错误
+            println err
+            // 发送构建失败邮件通知
+            emailext (
+                body: """
+                <p>传输可执行文件到远程机器目录失败<p>
+                <p>Pipeline页面： <a href='${env.JENKINS_URL}blue/organizations/jenkins/
+                ${env.JOB_NAME}/detail/${env.JOB_NAME}/${env.BUILD_NUMBER}/pipeline'
+                >${env.JOB_NAME}(pipeline page)</a></p>
+                <p>请查看Pipeline页面的日志定位问题</a></p>
+                <p>查看是否是credential无效或者远端目录权限限制问题</p>
+                """,
+                to: "${Mail_List}",
+                subject: "${env.JOB_NAME}-${env.BUILD_NUMBER}-传输可执行文件到远端机器失败",
+                attachLog: true
+            )
+
+            // 中止该任务并输出错误信息
+            error "复制可执行文件到远程部署机器失败"
+        }
+    
+      // 打包和传输步骤都成功，则发送邮件通知构建打包和传输成功，并且告知文件传输位置信息
+        emailext (
+            body: """
+            <p>拉取源码进行构建打包成功</p>
+            <p>Maven构建的包已经传送到远程机器的目录下
+            <p>Pipeline页面： <a href='${env.JENKINS_URL}blue/organizations/jenkins/
+            ${env. JOB_NAME}/detail/${env.JOB_NAME}/${env.BUILD_NUMBER}/pipeline
+            '>${env.JOB_NAME}(pipeline page)</a></p>
+            """,
+            to: "${env.Mail_List}",
+            subject: "${env.JOB_NAME}-${env.BUILD_NUMBER}-构建打包（没有部署）",
+            attachLog: true
+        )
+
+    }
+
+
+    stage("stage3 - 在远程机器上进行部署操作") {
+        // 这里的try-catch设定如果部署脚本失败，则发送邮件通知相关人员
+        try {
+            // 如果部署涉及多台机器，这里可以添加多个Remote_Credential
+            sshagent(["${env.Remote_Server1_Credential}"]) {
+                // 这里的sh部分的shell脚本是部署的实际内容，这里首先登录远程机器
+                // 然后可以执行具体的指令，或者调用远程机器上的部署脚本（注意设定的远程用户的权限）
+                sh '''
+                    ssh -t -t -o StrictHostKeyChecking=no ${Remote_Server1_Username}
+                    @${Remote_Server1_IP} """
+                    cd ${Remote_Server1_CopyToPath} 
+                    ls -al 
+                    """
+                    '''
+            }
+
+            // 发送邮件给相关人员，通知部署成功
+            emailext (
+                body: """
+                    <p>在${Remote_Server1_IP}节点部署成功</p>
+                    <p>Pipeline页面： <a href='${env.JENKINS_URL}blue/organizations/
+                    jenkins/ ${env.JOB_NAME}/detail/${env.JOB_NAME}/${env.BUILD_NUMBER}
+                    /pipeline'>${env.JOB_NAME}(pipeline page)</a></p>
+                    """,
+                to: "${env.Mail_List}",
+                subject: "${env.JOB_NAME}-${env.BUILD_NUMBER}-部署成功",
+                attachLog: true
+            )
+
+        } catch (err) {
+            // 输出错误
+            println err
+            // 发送邮件通知部署失败
+            emailext (
+                body: """
+                    <p>拉取源码在${Remote_Server1_IP}节点上部署失败<p>
+                    <p>Pipeline页面： <a href='${env.JENKINS_URL}blue/organizations/
+                    jenkins/ ${env.JOB_NAME}/detail/${env.JOB_NAME}/${env.BUILD_NUMBER}
+                    /pipeline'>${env.JOB_NAME}(pipeline page)</a></p>
+                    <p>请查看Pipeline页面的日志定位问题</a></p>
+                    """,
+                to: "${env.Mail_List}",
+                subject: "${env.JOB_NAME}-${env.BUILD_NUMBER}-部署失败",
+                attachLog: true
+            )
+
+            // 中止该任务并输出错误信息
+            error "在远程机器上部署失败"
+        }    
+    }
+}
