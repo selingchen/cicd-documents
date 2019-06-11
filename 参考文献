@@ -1,0 +1,46 @@
+参考文献
+
+
+Devops现状调查报告：https://ask.qcloudimg.com/raw/yehe-133f028/dorjc09gaa.pdf
+Rancher帮助：https://rancher.com/docs/rancher/v1.6/zh/
+Rancher中文参考：https://rancher.com/docs/rancher/latest/zh/
+Rancher英文参考：https://rancher.com/docs/rancher/latest/en/
+Maven JMeter插件：https://github.com/jmeter-maven-plugin/jmeter-maven-plugin
+Maven JMeter插件配置：https://github.com/jmeter-maven-plugin/jmeter-maven-plugin/wiki/ Advanced-Configuration
+Rancher Docker安装：https://rancher.com/docs/rancher/v1.6/zh/hosts/#docker%E7%89% 88%E6%9C%AC%E9%80%82%E7%94%A8%E5%AF%B9%E6%AF%94
+Harbor安装：https://github.com/vmware/harbor/blob/master/docs/installation_guide.md
+Dubbo官网：https://dubbo.incubator.apache.org/
+Dubbo官网中文帮助文档地址：https://dubbo.incubator.apache.org/books/dubbo-user-book/
+Dockers日志方案：https://docs.docker.com/config/containers/logging/configure/#supported- logging-drivers
+Elasticsearch：
+https://www.elastic.co/guide/cn/index.html?baymax=rtp&elektra=home&storm=sub1&iesrc=ctr
+Elasticsearch 帮助：https://www.elastic.co/cn/products/beats
+ELK安装文档：https://github.com/deviantony/docker-elk
+容器化ELK：https://github.com/deviantony/docker-elk/tree/docker-stack
+Filebeat安装参考地址：https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-getting- started.html
+Logstash实践：
+https://doc.yonyoucloud.com/doc/logstash-best-practice-cn/index.html
+ELK中文手册：
+https://www.kancloud.cn/hanxt/elk/158127
+Kibana手册：
+https://www.elastic.co/guide/cn/index.html?baymax=rtp&elektra=home&storm=sub1&iesrc=ctr
+Rancher官网有关微服务的方案：
+https://www.cnrancher.com/how-to-run-microservice-for-cattle/
+log-pilot：https://github.com/AliyunContainerService/log-pilot
+log-pilot elk: https://github.com/AliyunContainerService/log-pilot/blob/master/docs/filebeat/docs.md
+Docker网络模型：
+https://docs.docker.com/engine/userguide/networking/#the-default-bridge-network
+VPN网络：http://www.h3c.com/cn/d_201005/675214_97665_0.htm
+VXLAN: http://developer.huawei.com/ict/cn/site-agile-network/article/site-doc-vxlan
+VXLAN白皮书：
+http://e.huawei.com/cn/material/onLineView?MaterialID=2a6aee8873b9418698ece38facd95a31
+Overlay网络与物理网络的关系:https://www.sdnlab.com/7241.html
+Docker容器资源控制：
+有关CPU的：
+https://docs.docker.com/engine/admin/resource_constraints/#configure-the-realtime-scheduler
+有关内存的：
+https://docs.docker.com/engine/admin/resource_constraints/#limit-a-containers-access-to-memory
+腾讯云有关对象存储的说明：https://cloud.tencent.com/document/product/436/6223
+nfs参考：http://nfs.sourceforge.net/nfs-howto/
+Rancher2.0介绍：https://www.cnrancher.com/ranchernews/racher-2-0-beta-release/
+Rancher2.0安装向导：https://rancher.com/quick-start/
