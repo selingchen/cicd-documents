@@ -1,0 +1,48 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: jenkins
+  name: jenkins
+  namespace: jenkins
+  annotations:
+    prometheus.io/scrape: 'true'
+spec:
+  ports:
+    - name: jenkins
+      port: 8080
+      targetPort: 8080
+    - name: jenkins-agent
+      port: 50000
+      targetPort: 50000
+  selector:
+    k8s-app: jenkins
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: jenkins 
+  namespace: jenkins
+  labels:
+    k8s-app: jenkins
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/proxy-body-size: 50m
+    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+    ingress.kubernetes.io/proxy-body-size: 50m
+    ingress.kubernetes.io/proxy-request-buffering: "off"
+    ingress.kubernetes.io/rewrite-target: /
+spec:
+  tls:
+  - hosts:
+    - jenkins.${yourDomain}
+  rules:
+  - host: jenkins.${yourDomain}
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: jenkins
+          servicePort: 8080
+

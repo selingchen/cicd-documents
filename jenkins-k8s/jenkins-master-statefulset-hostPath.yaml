@@ -1,0 +1,71 @@
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: jenkins
+  namespace: jenkins
+  labels:
+    k8s-app: jenkins
+spec:
+  serviceName: jenkins
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      k8s-app: jenkins
+  template:
+    metadata:
+      name: jenkins
+      labels:
+        k8s-app: jenkins
+    spec:
+      nodeSelector:
+          kubernetes.io/hostname: kubernetes-node02
+      terminationGracePeriodSeconds: 10
+      serviceAccountName: jenkins
+      containers:
+      - name: jenkins
+        image: jenkins/jenkins:lts
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        - containerPort: 50000
+        resources:
+          limits:
+            cpu: 2
+            memory: 2Gi
+          requests:
+            cpu: 1
+            memory: 1Gi
+        env:
+        - name: JAVA_OPTS
+          value: -Xmx512m -XshowSettings:vm -Dhudson.slaves.NodeProvisioner.initialDelay=
+          0 -Dhudson.slaves.NodeProvisioner.MARGIN=50 -Dhudson.slaves.NodeProvisioner.
+          MARGIN0=0.85
+        volumeMounts:
+        - name: jenkins-home-storage
+          mountPath: /var/jenkins_home
+        livenessProbe:
+          httpGet:
+            path: /login
+            port: 8080
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
+          failureThreshold: 12 
+        readinessProbe:
+          httpGet:
+            path: /login
+            port: 8080
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
+          failureThreshold: 12 
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 1000
+      volumes:
+        - name: jenkins-home-storage
+          hostPath:
+            path: /mnt/local-storage/jenkins
+            type: DirectoryOrCreate
+
