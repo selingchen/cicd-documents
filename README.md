@@ -1,1 +1,2 @@
-# 《持续集成与持续部署实践》涉及到的脚本及参考资料
+jenkins-k8s  # 在k8s集群中部署jenkins  
+jobs # ci cd实践部分在jenkins中配置的job  
